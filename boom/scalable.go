@@ -44,7 +44,8 @@ type ScalableBloomFilter struct {
 	r       float64                   // tightening ratio
 	fp      float64                   // target false-positive rate
 	p       float64                   // partition fill ratio
-	hint    uint                      // filter size hint
+	hint    uint                      // filter size hint for first filter
+	s       uint                      // space growth factor for successive filters. 2|4 recommended.
 }
 
 // NewScalableBloomFilter creates a new Scalable Bloom Filter with the
@@ -58,6 +59,7 @@ func NewScalableBloomFilter(hint uint, fpRate, r float64) *ScalableBloomFilter {
 		fp:      fpRate,
 		p:       fillRatio,
 		hint:    hint,
+		s:       4,
 	}
 
 	s.addFilter()
@@ -145,7 +147,17 @@ func (s *ScalableBloomFilter) Reset() *ScalableBloomFilter {
 // the Scalable Bloom Filter
 func (s *ScalableBloomFilter) addFilter() {
 	fpRate := s.fp * math.Pow(s.r, float64(len(s.filters)))
-	p := NewPartitionedBloomFilter(s.hint, fpRate)
+	var p *PartitionedBloomFilter
+
+	// first filter is created with a size determined by the hint.
+	// successive filters are created with a size determined by the
+	// previous filter's capacity and the space growth factor.
+	if len(s.filters) == 0 {
+		p = NewPartitionedBloomFilter(s.hint, fpRate)
+	} else {
+		p = NewPartitionedBloomFilterWithCapacity(s.filters[len(s.filters)-1].Capacity()*s.s, fpRate)
+	}
+
 	if len(s.filters) > 0 {
 		p.SetHash(s.filters[0].hash)
 	}

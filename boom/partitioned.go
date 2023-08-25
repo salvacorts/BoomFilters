@@ -43,6 +43,28 @@ type PartitionedBloomFilter struct {
 	count      uint        // number of items added
 }
 
+// NewPartitionedBloomFilterWithEstimates creates a new partitioned Bloom filter
+// with a specific capacity
+func NewPartitionedBloomFilterWithCapacity(m uint, fpRate float64) *PartitionedBloomFilter {
+	var (
+		k = OptimalK(fpRate)
+		s = uint(math.Ceil(float64(m) / float64(k)))
+	)
+	partitions := make([]*Buckets, k)
+
+	for i := uint(0); i < k; i++ {
+		partitions[i] = NewBuckets(s, 1)
+	}
+
+	return &PartitionedBloomFilter{
+		partitions: partitions,
+		hash:       fnv.New64(),
+		m:          m,
+		k:          k,
+		s:          s,
+	}
+}
+
 // NewPartitionedBloomFilter creates a new partitioned Bloom filter optimized
 // to store n items with a specified target false-positive rate.
 func NewPartitionedBloomFilter(n uint, fpRate float64) *PartitionedBloomFilter {
