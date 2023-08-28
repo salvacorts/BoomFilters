@@ -148,7 +148,7 @@ func (s *ScalableBloomFilter) Add(data []byte) Filter {
 
 		// calculate the actual fill ratio & update the estimated count for the filter. If the actual fill ratio
 		// is above the target fill ratio, add a new filter.
-		if fillRatio := s.filters[idx].UpdateCount(); fillRatio >= s.p {
+		if ratio := s.filters[idx].UpdateCount(); ratio >= s.p {
 			s.addFilter()
 			idx++
 		}
