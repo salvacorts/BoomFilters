@@ -212,6 +212,10 @@ func (p *PartitionedBloomFilter) WriteTo(stream io.Writer) (int64, error) {
 	if err != nil {
 		return 0, err
 	}
+	err = binary.Write(stream, binary.BigEndian, uint64(p.optimalCount))
+	if err != nil {
+		return 0, err
+	}
 	err = binary.Write(stream, binary.BigEndian, uint64(len(p.partitions)))
 	if err != nil {
 		return 0, err
@@ -231,7 +235,7 @@ func (p *PartitionedBloomFilter) WriteTo(stream io.Writer) (int64, error) {
 // have been written by WriteTo()) from an i/o stream. It returns the number
 // of bytes read.
 func (p *PartitionedBloomFilter) ReadFrom(stream io.Reader) (int64, error) {
-	var m, k, s, count, len uint64
+	var m, k, s, estimatedCount, optimalCount, len uint64
 	err := binary.Read(stream, binary.BigEndian, &m)
 	if err != nil {
 		return 0, err
@@ -244,7 +248,11 @@ func (p *PartitionedBloomFilter) ReadFrom(stream io.Reader) (int64, error) {
 	if err != nil {
 		return 0, err
 	}
-	err = binary.Read(stream, binary.BigEndian, &count)
+	err = binary.Read(stream, binary.BigEndian, &estimatedCount)
+	if err != nil {
+		return 0, err
+	}
+	err = binary.Read(stream, binary.BigEndian, &optimalCount)
 	if err != nil {
 		return 0, err
 	}
@@ -266,7 +274,8 @@ func (p *PartitionedBloomFilter) ReadFrom(stream io.Reader) (int64, error) {
 	p.m = uint(m)
 	p.k = uint(k)
 	p.s = uint(s)
-	p.estimatedCount = uint(count)
+	p.estimatedCount = uint(estimatedCount)
+	p.optimalCount = uint(optimalCount)
 	p.partitions = partitions
 	return numBytes + int64(5*binary.Size(uint64(0))), nil
 }

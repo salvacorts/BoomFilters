@@ -223,6 +223,14 @@ func (s *ScalableBloomFilter) WriteTo(stream io.Writer) (int64, error) {
 	if err != nil {
 		return 0, err
 	}
+	err = binary.Write(stream, binary.BigEndian, uint64(s.s))
+	if err != nil {
+		return 0, err
+	}
+	err = binary.Write(stream, binary.BigEndian, uint64(s.additionsSinceFillRatioCheck))
+	if err != nil {
+		return 0, err
+	}
 	err = binary.Write(stream, binary.BigEndian, uint64(len(s.filters)))
 	if err != nil {
 		return 0, err
@@ -243,7 +251,7 @@ func (s *ScalableBloomFilter) WriteTo(stream io.Writer) (int64, error) {
 // of bytes read.
 func (s *ScalableBloomFilter) ReadFrom(stream io.Reader) (int64, error) {
 	var r, fp, p float64
-	var hint, len uint64
+	var hint, growthFactor, additions, len uint64
 	err := binary.Read(stream, binary.BigEndian, &r)
 	if err != nil {
 		return 0, err
@@ -257,6 +265,14 @@ func (s *ScalableBloomFilter) ReadFrom(stream io.Reader) (int64, error) {
 		return 0, err
 	}
 	err = binary.Read(stream, binary.BigEndian, &hint)
+	if err != nil {
+		return 0, err
+	}
+	err = binary.Read(stream, binary.BigEndian, &growthFactor)
+	if err != nil {
+		return 0, err
+	}
+	err = binary.Read(stream, binary.BigEndian, &additions)
 	if err != nil {
 		return 0, err
 	}
@@ -279,6 +295,8 @@ func (s *ScalableBloomFilter) ReadFrom(stream io.Reader) (int64, error) {
 	s.fp = fp
 	s.p = p
 	s.hint = uint(hint)
+	s.s = uint(growthFactor)
+	s.additionsSinceFillRatioCheck = uint(additions)
 	s.filters = filters
 	return numBytes + int64(5*binary.Size(uint64(0))), nil
 }
