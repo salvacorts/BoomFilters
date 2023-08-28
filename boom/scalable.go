@@ -94,18 +94,20 @@ func (s *ScalableBloomFilter) Capacity() uint {
 }
 
 // K returns the number of hash functions used in each Bloom filter.
+// Returns the highest value (the last filter)
 func (s *ScalableBloomFilter) K() uint {
-	// K is the same across every filter.
-	return s.filters[0].K()
+	return s.filters[len(s.filters)-1].K()
 }
 
 // FillRatio returns the average ratio of set bits across every filter.
 func (s *ScalableBloomFilter) FillRatio() float64 {
-	sum := 0.0
+	var sum, count float64
 	for _, filter := range s.filters {
-		sum += filter.FillRatio()
+		capacity := filter.Capacity()
+		sum += filter.FillRatio() * float64(capacity)
+		count += float64(capacity)
 	}
-	return sum / float64(len(s.filters))
+	return sum / count
 }
 
 // Test will test for membership of the data and returns true if it is a
