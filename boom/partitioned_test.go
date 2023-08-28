@@ -199,3 +199,13 @@ func BenchmarkPartitionedBloomTestAndAdd(b *testing.B) {
 		f.TestAndAdd(data[n])
 	}
 }
+
+func BenchmarkPartitionedFillRatio(b *testing.B) {
+	b.StopTimer()
+	f := NewPartitionedBloomFilter(100000, 0.1)
+	b.StartTimer()
+
+	for n := 0; n < b.N; n++ {
+		f.FillRatio()
+	}
+}

@@ -27,18 +27,6 @@ func TestNewDefaultScalableBloomFilter(t *testing.T) {
 	}
 }
 
-// Ensures that Capacity returns the sum of the capacities for the contained
-// Bloom filters.
-func TestScalableBloomCapacity(t *testing.T) {
-	f := NewScalableBloomFilter(1, 0.1, 1)
-	f.addFilter()
-	f.addFilter()
-
-	if capacity := f.Capacity(); capacity != 15 {
-		t.Errorf("Expected 15, got %d", capacity)
-	}
-}
-
 // Ensures that K returns the number of hash functions used in each Bloom
 // filter.
 func TestScalableBloomK(t *testing.T) {

@@ -112,10 +112,8 @@ func (p *PartitionedBloomFilter) EstimatedFillRatio() float64 {
 func (p *PartitionedBloomFilter) FillRatio() float64 {
 	t := float64(0)
 	for i := uint(0); i < p.k; i++ {
-		sum := uint32(0)
-		for j := uint(0); j < p.partitions[i].Count(); j++ {
-			sum += p.partitions[i].Get(j)
-		}
+		var sum int
+		sum += p.partitions[i].PopCount()
 		t += (float64(sum) / float64(p.s))
 	}
 	return t / float64(p.k)
