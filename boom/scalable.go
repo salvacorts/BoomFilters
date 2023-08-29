@@ -59,7 +59,7 @@ type ScalableBloomFilter struct {
 	additionsSinceFillRatioCheck uint
 }
 
-const fillCheckFraction = 500
+const fillCheckFraction = 100
 
 // NewScalableBloomFilter creates a new Scalable Bloom Filter with the
 // specified target false-positive rate and tightening ratio. Use
@@ -147,6 +147,7 @@ func (s *ScalableBloomFilter) Add(data []byte) Filter {
 	//    every n inserts where n is some fraction of the total optimal key count,
 	//    we can amortize the cost of the fill ratio check.
 	if s.filters[idx].EstimatedFillRatio() >= s.p && s.additionsSinceFillRatioCheck >= s.filters[idx].OptimalCount()/fillCheckFraction {
+		s.additionsSinceFillRatioCheck = 0
 
 		// calculate the actual fill ratio & update the estimated count for the filter. If the actual fill ratio
 		// is above the target fill ratio, add a new filter.
