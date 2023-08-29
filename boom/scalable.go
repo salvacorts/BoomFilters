@@ -59,6 +59,8 @@ type ScalableBloomFilter struct {
 	additionsSinceFillRatioCheck uint
 }
 
+const fillCheckFraction = 500
+
 // NewScalableBloomFilter creates a new Scalable Bloom Filter with the
 // specified target false-positive rate and tightening ratio. Use
 // NewDefaultScalableBloomFilter if you don't want to calculate these
@@ -135,7 +137,7 @@ func (s *ScalableBloomFilter) Add(data []byte) Filter {
 	// may be because it doesn't account for duplicate key inserts.
 	// Therefore, use the estimated fill ratio to determine when to add a new filter, but
 	// throttle this by only checking the actual fill ratio when we've
-	// performed inserts greater than one-thousandth of the filter's optimal cardinality
+	// performed inserts greater than some fraction of the filter's optimal cardinality
 	// capacity since the last check.
 	// This prevents us from running expensive fill ratio checks too often on both ends:
 	// 1. When the filter is under utilized and the estimated fill ratio
@@ -144,7 +146,7 @@ func (s *ScalableBloomFilter) Add(data []byte) Filter {
 	//    will quickly inflate the estimated fill ratio. By throttling this check to
 	//    every n inserts where n is some fraction of the total optimal key count,
 	//    we can amortize the cost of the fill ratio check.
-	if s.filters[idx].EstimatedFillRatio() >= s.p && s.additionsSinceFillRatioCheck >= s.filters[idx].OptimalCount()/1000 {
+	if s.filters[idx].EstimatedFillRatio() >= s.p && s.additionsSinceFillRatioCheck >= s.filters[idx].OptimalCount()/fillCheckFraction {
 
 		// calculate the actual fill ratio & update the estimated count for the filter. If the actual fill ratio
 		// is above the target fill ratio, add a new filter.
