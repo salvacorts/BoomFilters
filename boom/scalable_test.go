@@ -194,3 +194,16 @@ func BenchmarkScalableBloomTestAndAdd(b *testing.B) {
 		f.TestAndAdd(data[n])
 	}
 }
+
+func BenchmarkRead(b *testing.B) {
+	b.StopTimer()
+	keys := int(1e6)
+	f := NewScalableBloomFilter(1<<10, 0.1, 0.8)
+	for i := 0; i < keys; i++ {
+		f.Add([]byte(strconv.Itoa(i)))
+	}
+	b.StartTimer()
+	for i := 0; i < b.N; i++ {
+		f.Test([]byte(strconv.Itoa(i)))
+	}
+}
