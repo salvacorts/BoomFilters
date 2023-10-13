@@ -166,6 +166,11 @@ func TestPartitionedBloomFilterLazyReader(t *testing.T) {
 		}
 	}
 
+	// We want more than one partition to make sure that we're reading the serialized object correctly.
+	if len(filter.partitions) < 2 {
+		t.Errorf("Expected more than 1 partition, got %d", len(filter.partitions))
+	}
+
 	buf, err := filter.GobEncode()
 	if err != nil {
 		t.Error(err)

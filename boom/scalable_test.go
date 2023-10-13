@@ -161,6 +161,11 @@ func TestScalableBloomFilterLazyReader(t *testing.T) {
 		}
 	}
 
+	// We want more than one filter to make sure that we're reading the serialized object correctly.
+	if len(filter.filters) < 2 {
+		t.Errorf("Expected more than 1 filter, got %d", len(filter.filters))
+	}
+
 	buf, err := filter.GobEncode()
 	if err != nil {
 		t.Error(err)
