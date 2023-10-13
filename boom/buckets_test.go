@@ -102,6 +102,35 @@ func TestBucketsGob(t *testing.T) {
 	}
 }
 
+func TestBucketsLazyReader(t *testing.T) {
+	filter := NewBuckets(10000, 10)
+	for i := 0; i < 2000; i++ {
+		if i%2 == 0 {
+			filter.Set(uint(i), 1)
+		}
+	}
+
+	buf, err := filter.GobEncode()
+	if err != nil {
+		t.Error(err)
+	}
+
+	lazyFilter, n := NewBucketsLazyReader(buf)
+	if n != len(buf) {
+		t.Errorf("Expected %d bytes read, got %d", len(buf), n)
+	}
+
+	for i := 0; i < 2000; i++ {
+		value := filter.Get(uint(i))
+		lazyValue := lazyFilter.Get(uint(i))
+
+		if value != lazyValue {
+			t.Errorf("Expected %d, got %d for %d", value, lazyValue, i)
+		}
+	}
+
+}
+
 func BenchmarkBucketsIncrement(b *testing.B) {
 	buckets := NewBuckets(10000, 10)
 	for n := 0; n < b.N; n++ {

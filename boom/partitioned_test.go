@@ -158,6 +158,40 @@ func TestPartitionedBloomGob(t *testing.T) {
 	}
 }
 
+func TestPartitionedBloomFilterLazyReader(t *testing.T) {
+	filter := NewPartitionedBloomFilter(100, 0.1)
+	for i := 0; i < 2000; i++ {
+		if i%2 == 0 {
+			filter.Add([]byte(strconv.Itoa(i)))
+		}
+	}
+
+	// We want more than one partition to make sure that we're reading the serialized object correctly.
+	if len(filter.partitions) < 2 {
+		t.Errorf("Expected more than 1 partition, got %d", len(filter.partitions))
+	}
+
+	buf, err := filter.GobEncode()
+	if err != nil {
+		t.Error(err)
+	}
+
+	lazyFilter, n := NewPartitionedBloomFilterLazyReader(buf)
+	if n != len(buf) {
+		t.Errorf("Expected %d bytes read, got %d", len(buf), n)
+	}
+
+	for i := 0; i < 2000; i++ {
+		exists := filter.Test([]byte(strconv.Itoa(i)))
+		lazyExists := lazyFilter.Test([]byte(strconv.Itoa(i)))
+
+		if exists != lazyExists {
+			t.Errorf("Expected %t, got %t for %d", exists, lazyExists, i)
+		}
+	}
+
+}
+
 func BenchmarkPartitionedBloomAdd(b *testing.B) {
 	b.StopTimer()
 	f := NewPartitionedBloomFilter(100000, 0.1)

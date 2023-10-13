@@ -153,6 +153,40 @@ func TestScalableBloomGob(t *testing.T) {
 	}
 }
 
+func TestScalableBloomFilterLazyReader(t *testing.T) {
+	filter := NewScalableBloomFilter(10, 0.1, 0.8)
+	for i := 0; i < 2000; i++ {
+		if i%2 == 0 {
+			filter.Add([]byte(strconv.Itoa(i)))
+		}
+	}
+
+	// We want more than one filter to make sure that we're reading the serialized object correctly.
+	if len(filter.filters) < 2 {
+		t.Errorf("Expected more than 1 filter, got %d", len(filter.filters))
+	}
+
+	buf, err := filter.GobEncode()
+	if err != nil {
+		t.Error(err)
+	}
+
+	lazyFilter, n := NewScalableBloomFilterLazyReader(buf)
+	if n != len(buf) {
+		t.Errorf("Expected %d bytes read, got %d", len(buf), n)
+	}
+
+	for i := 0; i < 2000; i++ {
+		exists := filter.Test([]byte(strconv.Itoa(i)))
+		lazyExists := lazyFilter.Test([]byte(strconv.Itoa(i)))
+
+		if exists != lazyExists {
+			t.Errorf("Expected %t, got %t for %d", exists, lazyExists, i)
+		}
+	}
+
+}
+
 func BenchmarkScalableBloomAdd(b *testing.B) {
 	b.StopTimer()
 	f := NewScalableBloomFilter(100000, 0.1, 0.8)
