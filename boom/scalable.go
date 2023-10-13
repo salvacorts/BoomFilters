@@ -326,25 +326,25 @@ func (s *ScalableBloomFilter) GobDecode(data []byte) error {
 }
 
 type ScalableBloomFilterLazyReader struct {
-	filters     []*PartitionedBloomFilterLazyReader
+	filters     []PartitionedBloomFilterLazyReader
 	initialized bool
 }
 
-func NewScalableBloomFilterLazyReader(data []byte) (*ScalableBloomFilterLazyReader, int) {
+func NewScalableBloomFilterLazyReader(data []byte) (ScalableBloomFilterLazyReader, int) {
 	// Skip r, fp, p float64 and hint, s, additionsSinceFillRatioCheck uint64
 	filtersLenOffset := 3*binary.Size(float64(0)) + 3*binary.Size(uint64(0))
 	filtersLen := binary.BigEndian.Uint64(data[filtersLenOffset:])
 
 	filterStartOffset := filtersLenOffset + binary.Size(uint64(0))
 
-	filters := make([]*PartitionedBloomFilterLazyReader, filtersLen)
+	filters := make([]PartitionedBloomFilterLazyReader, filtersLen)
 	for i := range filters {
 		filter, n := NewPartitionedBloomFilterLazyReader(data[filterStartOffset:])
 		filterStartOffset += n
 		filters[i] = filter
 	}
 
-	return &ScalableBloomFilterLazyReader{
+	return ScalableBloomFilterLazyReader{
 		filters: filters,
 	}, filterStartOffset
 }
@@ -353,7 +353,7 @@ func NewScalableBloomFilterLazyReader(data []byte) (*ScalableBloomFilterLazyRead
 // member, false if not. This is a probabilistic test, meaning there is a
 // non-zero probability of false positives but a zero probability of false
 // negatives.
-func (s *ScalableBloomFilterLazyReader) Test(data []byte) bool {
+func (s ScalableBloomFilterLazyReader) Test(data []byte) bool {
 	// Querying is made by testing for the presence in each filter.
 	for _, bf := range s.filters {
 		if bf.Test(data) {

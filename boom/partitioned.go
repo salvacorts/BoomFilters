@@ -304,10 +304,10 @@ func (p *PartitionedBloomFilter) GobDecode(data []byte) error {
 }
 
 type PartitionedBloomFilterLazyReader struct {
-	partitions []*BucketsLazyReader // partitioned filter data
-	hash       hash.Hash64          // hash function (kernel for all k functions)
-	k          uint                 // number of hash functions (and partitions)
-	s          uint                 // partition size (m / k)
+	partitions []BucketsLazyReader // partitioned filter data
+	hash       hash.Hash64         // hash function (kernel for all k functions)
+	k          uint                // number of hash functions (and partitions)
+	s          uint                // partition size (m / k)
 }
 
 // NewPartitionedBloomFilterLazyReader creates a new PartitionedBloomFilterLazyReader from the provided data
@@ -315,7 +315,7 @@ type PartitionedBloomFilterLazyReader struct {
 // The data is expected to be in the format written by PartitionedBloomFilter.WriteTo().
 // Whereas PartitionedBloomFilter.ReadFrom() calls Buckets.ReadFrom() hence making a copy of the data,
 // NewPartitionedBloomFilterLazyReader calls NewBucketsLazyReader which keeps a reference to the original data buffer.
-func NewPartitionedBloomFilterLazyReader(data []byte) (*PartitionedBloomFilterLazyReader, int) {
+func NewPartitionedBloomFilterLazyReader(data []byte) (PartitionedBloomFilterLazyReader, int) {
 	// Skip m (uint64),
 	kOffset := binary.Size(uint64(0))
 	k := binary.BigEndian.Uint64(data[kOffset:])
@@ -330,7 +330,7 @@ func NewPartitionedBloomFilterLazyReader(data []byte) (*PartitionedBloomFilterLa
 
 	bucketStartOffset := lenBucketsOffset + binary.Size(uint64(0))
 
-	partitions := make([]*BucketsLazyReader, lenBuckets)
+	partitions := make([]BucketsLazyReader, lenBuckets)
 	for i := range partitions {
 		b, n := NewBucketsLazyReader(data[bucketStartOffset:])
 		bucketStartOffset += n
@@ -339,7 +339,7 @@ func NewPartitionedBloomFilterLazyReader(data []byte) (*PartitionedBloomFilterLa
 
 	// The length is the bucketStartOffset since we updated it in the last
 	// iteration of the loop above with the length of the last bucket.
-	return &PartitionedBloomFilterLazyReader{
+	return PartitionedBloomFilterLazyReader{
 		partitions: partitions,
 		hash:       getNewHashFunction(),
 		k:          uint(k),
@@ -352,7 +352,7 @@ func NewPartitionedBloomFilterLazyReader(data []byte) (*PartitionedBloomFilterLa
 // non-zero probability of false positives but a zero probability of false
 // negatives. Due to the way the filter is partitioned, the probability of
 // false positives is uniformly distributed across all elements.
-func (p *PartitionedBloomFilterLazyReader) Test(data []byte) bool {
+func (p PartitionedBloomFilterLazyReader) Test(data []byte) bool {
 	lower, upper := hashKernel(data, p.hash)
 
 	// If any of the K partition bits are not set, then it's not a member.

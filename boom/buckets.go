@@ -203,7 +203,7 @@ type BucketsLazyReader struct {
 // Whereas Buckets.ReadFrom() reads the entire data into memory and
 // makes a copy of the data buffer, BucketsLazyReader keeps a reference
 // to the original data buffer and only reads from it when needed.
-func NewBucketsLazyReader(data []byte) (*BucketsLazyReader, int) {
+func NewBucketsLazyReader(data []byte) (BucketsLazyReader, int) {
 	bucketSize := data[0]
 
 	// Skip bucketSize (uint8), max (uint8), count (uint64)
@@ -212,7 +212,7 @@ func NewBucketsLazyReader(data []byte) (*BucketsLazyReader, int) {
 	dataStart := lenDataOffset + binary.Size(uint64(0))
 	dataEnd := dataStart + int(binary.BigEndian.Uint64(data[lenDataOffset:]))
 
-	return &BucketsLazyReader{
+	return BucketsLazyReader{
 		Buckets: Buckets{
 			data:       data[dataStart:dataEnd],
 			bucketSize: bucketSize,
@@ -221,6 +221,6 @@ func NewBucketsLazyReader(data []byte) (*BucketsLazyReader, int) {
 }
 
 // Get returns the value in the specified bucket.
-func (s *BucketsLazyReader) Get(bucket uint) uint32 {
+func (s BucketsLazyReader) Get(bucket uint) uint32 {
 	return s.Buckets.Get(bucket)
 }
